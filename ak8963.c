@@ -180,11 +180,13 @@ stm_err_t ak8963_get_mag_raw(ak8963_handle_t handle, ak8963_raw_data_t *raw_data
 
     ret = handle->_read(handle, AK8963_XOUT_L, mag_raw_data, 7, TIMEOUT_MS_DEFAULT);
     if (ret) {
+        STM_LOGE(AK8963_TAG, AK8963_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }
 
     if ((mag_raw_data[6] & 0x08)) {
+        STM_LOGE(AK8963_TAG, AK8963_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }
@@ -206,11 +208,13 @@ stm_err_t ak8963_get_mag_cali(ak8963_handle_t handle, ak8963_cali_data_t *cali_d
 
     ret = handle->_read(handle, AK8963_XOUT_L, mag_raw_data, 7, TIMEOUT_MS_DEFAULT);
     if (ret) {
+        STM_LOGE(AK8963_TAG, AK8963_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }
 
     if ((mag_raw_data[6] & 0x08)) {
+        STM_LOGE(AK8963_TAG, AK8963_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }
@@ -236,11 +240,13 @@ stm_err_t ak8963_get_mag_scale(ak8963_handle_t handle, ak8963_scale_data_t *scal
 
     ret = handle->_read(handle, AK8963_XOUT_L, mag_raw_data, 7, TIMEOUT_MS_DEFAULT);
     if (ret) {
+        STM_LOGE(AK8963_TAG, AK8963_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }
 
     if ((mag_raw_data[6] & 0x08)) {
+        STM_LOGE(AK8963_TAG, AK8963_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }

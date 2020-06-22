@@ -315,6 +315,7 @@ stm_err_t mpu9250_get_accel_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw
 
     ret = handle->_read(handle, MPU9250_ACCEL_XOUT_H, accel_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
+        STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }
@@ -336,6 +337,7 @@ stm_err_t mpu9250_get_accel_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *c
 
     ret = handle->_read(handle, MPU9250_ACCEL_XOUT_H, accel_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
+        STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }
@@ -357,6 +359,7 @@ stm_err_t mpu9250_get_accel_scale(mpu9250_handle_t handle, mpu9250_scale_data_t 
 
     ret = handle->_read(handle, MPU9250_ACCEL_XOUT_H, accel_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
+        STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }
@@ -378,6 +381,7 @@ stm_err_t mpu9250_get_gyro_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw_
 
     ret = handle->_read(handle, MPU9250_GYRO_XOUT_H, gyro_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
+        STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }
@@ -399,6 +403,7 @@ stm_err_t mpu9250_get_gyro_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *ca
 
     ret = handle->_read(handle, MPU9250_GYRO_XOUT_H, gyro_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
+        STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }
@@ -419,6 +424,7 @@ stm_err_t mpu9250_get_gyro_scale(mpu9250_handle_t handle, mpu9250_scale_data_t *
     uint8_t gyro_raw_data[6];
     ret = handle->_read(handle, MPU9250_GYRO_XOUT_H, gyro_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
+        STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
         return STM_FAIL;
     }
