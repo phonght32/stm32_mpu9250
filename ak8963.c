@@ -42,9 +42,9 @@
 #define mutex_destroy(x)            vQueueDelete(x)
 
 static const char* AK8963_TAG = "AK8963";
-#define AK8963_CHECK(a, str, ret)  if(!(a)) {                                               \
+#define AK8963_CHECK(a, str, action)  if(!(a)) {                                            \
         STM_LOGE(AK8963_TAG,"%s:%d (%s):%s", __FILE__, __LINE__, __FUNCTION__, str);        \
-        return (ret);                                                                       \
+        action;                                                                       \
         }
 
 typedef stm_err_t (*read_func)(ak8963_handle_t handle, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
@@ -73,7 +73,7 @@ static stm_err_t _i2c_write_func(ak8963_handle_t handle, uint8_t reg_addr, uint8
         buf_send[i + 1] = buf[i];
     }
 
-    AK8963_CHECK(!i2c_write_bytes(handle->i2c_num, AK8963_ADDR, buf_send, len + 1, timeout_ms), AK8963_TRANS_ERR_STR, STM_FAIL);
+    AK8963_CHECK(!i2c_write_bytes(handle->i2c_num, AK8963_ADDR, buf_send, len + 1, timeout_ms), AK8963_TRANS_ERR_STR, return STM_FAIL);
     return STM_OK;
 }
 
@@ -81,8 +81,8 @@ static stm_err_t _i2c_read_func(ak8963_handle_t handle, uint8_t reg_addr, uint8_
 {
     uint8_t buffer[1];
     buffer[0] = reg_addr;
-    AK8963_CHECK(!i2c_write_bytes(handle->i2c_num, AK8963_ADDR, buffer, 1, timeout_ms), AK8963_REC_ERR_STR, STM_FAIL);
-    AK8963_CHECK(!i2c_read_bytes(handle->i2c_num, AK8963_ADDR, buf, len, timeout_ms), AK8963_REC_ERR_STR, STM_FAIL);
+    AK8963_CHECK(!i2c_write_bytes(handle->i2c_num, AK8963_ADDR, buffer, 1, timeout_ms), AK8963_REC_ERR_STR, return STM_FAIL);
+    AK8963_CHECK(!i2c_read_bytes(handle->i2c_num, AK8963_ADDR, buf, len, timeout_ms), AK8963_REC_ERR_STR, return STM_FAIL);
 
     return STM_OK;
 }
@@ -93,18 +93,22 @@ static void _ak8963_set_func(ak8963_handle_t handle, read_func _read, write_func
     handle->_write = _write;
 }
 
+static void _ak8963_cleanup(ak8963_handle_t handle) {
+    free(handle);
+}
+
 ak8963_handle_t ak8963_init(ak8963_cfg_t *config)
 {
     /* Check if init structure is empty */
-    AK8963_CHECK(config, AK8963_INIT_ERR_STR, NULL);
-    AK8963_CHECK(config->opr_mode < AK8963_MODE_MAX, AK8963_INIT_ERR_STR, NULL);
-    AK8963_CHECK(config->mfs_sel < AK8963_MFS_MAX, AK8963_INIT_ERR_STR, NULL);
-    AK8963_CHECK(config->if_protocol < AK8963_IF_MAX, AK8963_INIT_ERR_STR, NULL);
+    AK8963_CHECK(config, AK8963_INIT_ERR_STR, return NULL);
+    AK8963_CHECK(config->opr_mode < AK8963_MODE_MAX, AK8963_INIT_ERR_STR, return NULL);
+    AK8963_CHECK(config->mfs_sel < AK8963_MFS_MAX, AK8963_INIT_ERR_STR, return NULL);
+    AK8963_CHECK(config->if_protocol < AK8963_IF_MAX, AK8963_INIT_ERR_STR, return NULL);
 
     /* Allocate memory for handle structure */
     ak8963_handle_t handle;
     handle = calloc(1, sizeof(ak8963_t));
-    AK8963_CHECK(handle, AK8963_INIT_ERR_STR, NULL);
+    AK8963_CHECK(handle, AK8963_INIT_ERR_STR, return NULL);
 
     handle->i2c_num = config->i2c_num;
 
@@ -116,17 +120,17 @@ ak8963_handle_t ak8963_init(ak8963_cfg_t *config)
     /* Power down AK8963 magnetic sensor */
     uint8_t buffer = 0;
     buffer = 0x00;
-    AK8963_CHECK(!handle->_write(handle, AK8963_CNTL, &buffer, 1, TIMEOUT_MS_DEFAULT), AK8963_INIT_ERR_STR, NULL);
+    AK8963_CHECK(!handle->_write(handle, AK8963_CNTL, &buffer, 1, TIMEOUT_MS_DEFAULT), AK8963_INIT_ERR_STR, {_ak8963_cleanup(handle); return NULL;});
     HAL_Delay(10);
 
     /* Set fuse ROM access mode */
     buffer = 0x0F;
-    AK8963_CHECK(!handle->_write(handle, AK8963_CNTL, &buffer, 1, TIMEOUT_MS_DEFAULT), AK8963_INIT_ERR_STR, NULL);
+    AK8963_CHECK(!handle->_write(handle, AK8963_CNTL, &buffer, 1, TIMEOUT_MS_DEFAULT), AK8963_INIT_ERR_STR, {_ak8963_cleanup(handle); return NULL;});
     HAL_Delay(10);
 
     /* Read magnetic sensitivity adjustment */
     uint8_t mag_raw_data[3];
-    AK8963_CHECK(!handle->_read(handle, AK8963_ASAX, mag_raw_data, 3, TIMEOUT_MS_DEFAULT), AK8963_INIT_ERR_STR, NULL);
+    AK8963_CHECK(!handle->_read(handle, AK8963_ASAX, mag_raw_data, 3, TIMEOUT_MS_DEFAULT), AK8963_INIT_ERR_STR, {_ak8963_cleanup(handle); return NULL;});
 
     handle->asa.x_axis = (float)(mag_raw_data[0] - 128) / 256.0f + 1.0f;
     handle->asa.y_axis = (float)(mag_raw_data[1] - 128) / 256.0f + 1.0f;
@@ -134,14 +138,14 @@ ak8963_handle_t ak8963_init(ak8963_cfg_t *config)
 
     /* Power down AK8963 magnetic sensor */
     buffer = 0x00;
-    AK8963_CHECK(!handle->_write(handle, AK8963_CNTL, &buffer, 1, TIMEOUT_MS_DEFAULT), AK8963_INIT_ERR_STR, NULL);
+    AK8963_CHECK(!handle->_write(handle, AK8963_CNTL, &buffer, 1, TIMEOUT_MS_DEFAULT), AK8963_INIT_ERR_STR, {_ak8963_cleanup(handle); return NULL;});
     HAL_Delay(10);
 
     /* Configure magnetic operation mode and range */
     buffer = 0;
     buffer = (config->opr_mode) & 0x0F;
     buffer |= (config->mfs_sel << 4) & 0x10;
-    AK8963_CHECK(!handle->_write(handle, AK8963_CNTL, &buffer, 1, TIMEOUT_MS_DEFAULT), AK8963_INIT_ERR_STR, NULL);
+    AK8963_CHECK(!handle->_write(handle, AK8963_CNTL, &buffer, 1, TIMEOUT_MS_DEFAULT), AK8963_INIT_ERR_STR, {_ak8963_cleanup(handle); return NULL;});
     HAL_Delay(10);
 
     /* Update magnetometer scaling factor */

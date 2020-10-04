@@ -123,9 +123,9 @@
 #define mutex_destroy(x)                vQueueDelete(x)
 
 static const char* MPU9250_TAG = "MPU9250";
-#define MPU9250_CHECK(a, str, ret)  if(!(a)) {                                              \
+#define MPU9250_CHECK(a, str, action)  if(!(a)) {                                           \
         STM_LOGE(MPU9250_TAG,"%s:%d (%s):%s", __FILE__, __LINE__, __FUNCTION__, str);       \
-        return (ret);                                                                       \
+        action;                                                                             \
         }
 
 typedef stm_err_t (*read_func)(mpu9250_handle_t handle, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
@@ -157,7 +157,7 @@ static stm_err_t _i2c_write_func(mpu9250_handle_t handle, uint8_t reg_addr, uint
         buf_send[i + 1] = buf[i];
     }
 
-    MPU9250_CHECK(!i2c_write_bytes(handle->i2c_num, MPU9250_ADDR, buf_send, len + 1, timeout_ms), MPU9250_TRANS_ERR_STR, STM_FAIL);
+    MPU9250_CHECK(!i2c_write_bytes(handle->i2c_num, MPU9250_ADDR, buf_send, len + 1, timeout_ms), MPU9250_TRANS_ERR_STR, return STM_FAIL);
     return STM_OK;
 }
 
@@ -165,8 +165,8 @@ static stm_err_t _i2c_read_func(mpu9250_handle_t handle, uint8_t reg_addr, uint8
 {
     uint8_t buffer[1];
     buffer[0] = reg_addr;
-    MPU9250_CHECK(!i2c_write_bytes(handle->i2c_num, MPU9250_ADDR, buffer, 1, timeout_ms), MPU9250_REC_ERR_STR, STM_FAIL);
-    MPU9250_CHECK(!i2c_read_bytes(handle->i2c_num, MPU9250_ADDR, buf, len, timeout_ms), MPU9250_REC_ERR_STR, STM_FAIL);
+    MPU9250_CHECK(!i2c_write_bytes(handle->i2c_num, MPU9250_ADDR, buffer, 1, timeout_ms), MPU9250_REC_ERR_STR, return STM_FAIL);
+    MPU9250_CHECK(!i2c_read_bytes(handle->i2c_num, MPU9250_ADDR, buf, len, timeout_ms), MPU9250_REC_ERR_STR, return STM_FAIL);
 
     return STM_OK;
 }
@@ -177,21 +177,25 @@ static void _mpu9250_set_func(mpu9250_handle_t handle, read_func _read, write_fu
     handle->_write = _write;
 }
 
+static void _mpu9250_cleanup(mpu9250_handle_t handle) {
+    free(handle);
+}
+
 mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
 {
     /* Check if init structure is empty */
-    MPU9250_CHECK(config, MPU9250_INIT_ERR_STR, NULL);
-    MPU9250_CHECK(config->clksel < MPU9250_CLKSEL_MAX, MPU9250_INIT_ERR_STR, NULL);
-    MPU9250_CHECK(config->dlpf_cfg < MPU9250_DLPF_CFG_MAX, MPU9250_INIT_ERR_STR, NULL);
-    MPU9250_CHECK(config->sleep_mode < MPU9250_SLEEP_MODE_MAX, MPU9250_INIT_ERR_STR, NULL);
-    MPU9250_CHECK(config->fs_sel < MPU9250_FS_SEL_MAX, MPU9250_INIT_ERR_STR, NULL);
-    MPU9250_CHECK(config->afs_sel < MPU9250_AFS_SEL_MAX, MPU9250_INIT_ERR_STR, NULL);
-    MPU9250_CHECK(config->if_protocol < MPU9250_IF_MAX, MPU9250_INIT_ERR_STR, NULL);
+    MPU9250_CHECK(config, MPU9250_INIT_ERR_STR, return NULL);
+    MPU9250_CHECK(config->clksel < MPU9250_CLKSEL_MAX, MPU9250_INIT_ERR_STR, return NULL);
+    MPU9250_CHECK(config->dlpf_cfg < MPU9250_DLPF_CFG_MAX, MPU9250_INIT_ERR_STR, return NULL);
+    MPU9250_CHECK(config->sleep_mode < MPU9250_SLEEP_MODE_MAX, MPU9250_INIT_ERR_STR, return NULL);
+    MPU9250_CHECK(config->fs_sel < MPU9250_FS_SEL_MAX, MPU9250_INIT_ERR_STR, return NULL);
+    MPU9250_CHECK(config->afs_sel < MPU9250_AFS_SEL_MAX, MPU9250_INIT_ERR_STR, return NULL);
+    MPU9250_CHECK(config->if_protocol < MPU9250_IF_MAX, MPU9250_INIT_ERR_STR, return NULL);
 
     /* Allocate memory for handle structure */
     mpu9250_handle_t handle;
     handle = calloc(1, sizeof(mpu9250_t));
-    MPU9250_CHECK(handle, MPU9250_INIT_ERR_STR, NULL);
+    MPU9250_CHECK(handle, MPU9250_INIT_ERR_STR, return NULL);
 
     handle->i2c_num = config->i2c_num;
 
@@ -203,34 +207,34 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
     /* Reset mpu9250 */
     uint8_t buffer = 0;
     buffer = 0x80;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_PWR_MGMT_1, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, NULL);
+    MPU9250_CHECK(!handle->_write(handle, MPU9250_PWR_MGMT_1, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
     HAL_Delay(100);
 
     /* Configure clock source and sleep mode */
     buffer = config->clksel & 0x07;
     buffer |= (config->sleep_mode << 6) & 0x40;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_PWR_MGMT_1, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, NULL);
+    MPU9250_CHECK(!handle->_write(handle, MPU9250_PWR_MGMT_1, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
     HAL_Delay(100);
 
     /* Configure digital low pass filter */
     buffer = 0;
     buffer = config->dlpf_cfg & 0x07;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, NULL);
+    MPU9250_CHECK(!handle->_write(handle, MPU9250_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
 
     /* Configure gyroscope range */
     buffer = 0;
     buffer = (config->fs_sel << 3) & 0x18;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_GYRO_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, NULL);
+    MPU9250_CHECK(!handle->_write(handle, MPU9250_GYRO_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
 
     /* Configure accelerometer range */
     buffer = 0;
     buffer = (config->afs_sel << 3) & 0x18;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_ACCEL_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, NULL);
+    MPU9250_CHECK(!handle->_write(handle, MPU9250_ACCEL_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
 
     /* Configure sample rate divider */
     buffer = 0;
     buffer = 0x04;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_SMPLRT_DIV, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, NULL);
+    MPU9250_CHECK(!handle->_write(handle, MPU9250_SMPLRT_DIV, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
 
     /* Configure interrupt and enable bypass.
      * Set Interrupt pin active high, push-pull, Clear and read of INT_STATUS,
@@ -238,9 +242,9 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
      * join the I2C bus and can be controlled by master.
      */
     buffer = 0x22;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_INT_PIN_CFG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, NULL);
+    MPU9250_CHECK(!handle->_write(handle, MPU9250_INT_PIN_CFG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
     buffer = 0x01;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_INT_ENABLE, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, NULL);
+    MPU9250_CHECK(!handle->_write(handle, MPU9250_INT_ENABLE, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
 
     /* Update accelerometer scaling factor */
     switch (config->afs_sel)
