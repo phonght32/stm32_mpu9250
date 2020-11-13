@@ -128,8 +128,8 @@ static const char* MPU9250_TAG = "MPU9250";
         action;                                                                             \
         }
 
-typedef stm_err_t (*read_func)(mpu9250_handle_t handle, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
-typedef stm_err_t (*write_func)(mpu9250_handle_t handle, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
+typedef stm_err_t (*read_func)(mpu9250_hardware_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
+typedef stm_err_t (*write_func)(mpu9250_hardware_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
 
 typedef struct mpu9250 {
     mpu9250_clksel_t        clksel;                 /*!< MPU9250 clock source */
@@ -143,12 +143,12 @@ typedef struct mpu9250 {
     float                   accel_scaling_factor;   /*!< MPU9250 accelerometer scaling factor */
     float                   gyro_scaling_factor;    /*!< MPU9250 gyroscope scaling factor */
     SemaphoreHandle_t       lock;                   /*!< MPU9250 mutex */
-    i2c_num_t               i2c_num;                /*!< MPU9250 I2C num */
+    mpu9250_hardware_info_t         hw_info;                /*!< MPU9250 hardware information */
     read_func               _read;                  /*!< MPU9250 read function */
     write_func              _write;                 /*!< MPU9250 write function */
 } mpu9250_t;
 
-static stm_err_t _i2c_write_func(mpu9250_handle_t handle, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
+static stm_err_t _i2c_write_func(mpu9250_hardware_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
 {
     uint8_t buf_send[len + 1];
     buf_send[0] = reg_addr;
@@ -157,27 +157,40 @@ static stm_err_t _i2c_write_func(mpu9250_handle_t handle, uint8_t reg_addr, uint
         buf_send[i + 1] = buf[i];
     }
 
-    MPU9250_CHECK(!i2c_write_bytes(handle->i2c_num, MPU9250_ADDR, buf_send, len + 1, timeout_ms), MPU9250_TRANS_ERR_STR, return STM_FAIL);
+    MPU9250_CHECK(!i2c_write_bytes(hw_info.i2c_num, MPU9250_ADDR, buf_send, len + 1, timeout_ms), MPU9250_TRANS_ERR_STR, return STM_FAIL);
     return STM_OK;
 }
 
-static stm_err_t _i2c_read_func(mpu9250_handle_t handle, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
+static stm_err_t _i2c_read_func(mpu9250_hardware_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
 {
     uint8_t buffer[1];
     buffer[0] = reg_addr;
-    MPU9250_CHECK(!i2c_write_bytes(handle->i2c_num, MPU9250_ADDR, buffer, 1, timeout_ms), MPU9250_REC_ERR_STR, return STM_FAIL);
-    MPU9250_CHECK(!i2c_read_bytes(handle->i2c_num, MPU9250_ADDR, buf, len, timeout_ms), MPU9250_REC_ERR_STR, return STM_FAIL);
+    MPU9250_CHECK(!i2c_write_bytes(hw_info.i2c_num, MPU9250_ADDR, buffer, 1, timeout_ms), MPU9250_REC_ERR_STR, return STM_FAIL);
+    MPU9250_CHECK(!i2c_read_bytes(hw_info.i2c_num, MPU9250_ADDR, buf, len, timeout_ms), MPU9250_REC_ERR_STR, return STM_FAIL);
 
     return STM_OK;
 }
 
-static void _mpu9250_set_func(mpu9250_handle_t handle, read_func _read, write_func _write)
+static read_func _get_read_func(mpu9250_if_protocol_t if_protocol)
 {
-    handle->_read = _read;
-    handle->_write = _write;
+    if (if_protocol == MPU9250_IF_I2C) {
+        return _i2c_read_func;
+    }
+
+    return _i2c_read_func;
 }
 
-static void _mpu9250_cleanup(mpu9250_handle_t handle) {
+static write_func _get_write_func(mpu9250_if_protocol_t if_protocol)
+{
+    if (if_protocol == MPU9250_IF_I2C) {
+        return _i2c_write_func;
+    }
+
+    return _i2c_write_func;
+}
+
+static void _mpu9250_cleanup(mpu9250_handle_t handle)
+{
     free(handle);
 }
 
@@ -197,44 +210,40 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
     handle = calloc(1, sizeof(mpu9250_t));
     MPU9250_CHECK(handle, MPU9250_INIT_ERR_STR, return NULL);
 
-    handle->i2c_num = config->i2c_num;
-
-    if (config->if_protocol == MPU9250_IF_I2C)
-    {
-        _mpu9250_set_func(handle, _i2c_read_func, _i2c_write_func);
-    }
+    /* Get write function */
+    write_func _write = _get_write_func(config->if_protocol);
 
     /* Reset mpu9250 */
     uint8_t buffer = 0;
     buffer = 0x80;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_PWR_MGMT_1, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
-    HAL_Delay(100);
+    MPU9250_CHECK(!_write(config->hw_info, MPU9250_PWR_MGMT_1, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
+    vTaskDelay(100/portTICK_PERIOD_MS);
 
     /* Configure clock source and sleep mode */
     buffer = config->clksel & 0x07;
     buffer |= (config->sleep_mode << 6) & 0x40;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_PWR_MGMT_1, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
-    HAL_Delay(100);
+    MPU9250_CHECK(!_write(config->hw_info, MPU9250_PWR_MGMT_1, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
+    vTaskDelay(100/portTICK_PERIOD_MS);
 
     /* Configure digital low pass filter */
     buffer = 0;
     buffer = config->dlpf_cfg & 0x07;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
+    MPU9250_CHECK(!_write(config->hw_info, MPU9250_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
 
     /* Configure gyroscope range */
     buffer = 0;
     buffer = (config->fs_sel << 3) & 0x18;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_GYRO_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
+    MPU9250_CHECK(!_write(config->hw_info, MPU9250_GYRO_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
 
     /* Configure accelerometer range */
     buffer = 0;
     buffer = (config->afs_sel << 3) & 0x18;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_ACCEL_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
+    MPU9250_CHECK(!_write(config->hw_info, MPU9250_ACCEL_CONFIG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
 
     /* Configure sample rate divider */
     buffer = 0;
     buffer = 0x04;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_SMPLRT_DIV, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
+    MPU9250_CHECK(!_write(config->hw_info, MPU9250_SMPLRT_DIV, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
 
     /* Configure interrupt and enable bypass.
      * Set Interrupt pin active high, push-pull, Clear and read of INT_STATUS,
@@ -242,9 +251,9 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
      * join the I2C bus and can be controlled by master.
      */
     buffer = 0x22;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_INT_PIN_CFG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
+    MPU9250_CHECK(!_write(config->hw_info, MPU9250_INT_PIN_CFG, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
     buffer = 0x01;
-    MPU9250_CHECK(!handle->_write(handle, MPU9250_INT_ENABLE, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
+    MPU9250_CHECK(!_write(config->hw_info, MPU9250_INT_ENABLE, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
 
     /* Update accelerometer scaling factor */
     switch (config->afs_sel)
@@ -306,6 +315,9 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
     handle->sleep_mode = config->sleep_mode;
     handle->if_protocol = config->if_protocol;
     handle->lock = mutex_create();
+    handle->hw_info = config->hw_info;
+    handle->_read = _get_read_func(config->if_protocol);
+    handle->_write = _get_write_func(config->if_protocol);
 
     return handle;
 }
@@ -317,7 +329,7 @@ stm_err_t mpu9250_get_accel_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw
     int ret;
     uint8_t accel_raw_data[6];
 
-    ret = handle->_read(handle, MPU9250_ACCEL_XOUT_H, accel_raw_data, 6, TIMEOUT_MS_DEFAULT);
+    ret = handle->_read(handle->hw_info, MPU9250_ACCEL_XOUT_H, accel_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
         STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
@@ -339,7 +351,7 @@ stm_err_t mpu9250_get_accel_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *c
     int ret;
     uint8_t accel_raw_data[6];
 
-    ret = handle->_read(handle, MPU9250_ACCEL_XOUT_H, accel_raw_data, 6, TIMEOUT_MS_DEFAULT);
+    ret = handle->_read(handle->hw_info, MPU9250_ACCEL_XOUT_H, accel_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
         STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
@@ -361,7 +373,7 @@ stm_err_t mpu9250_get_accel_scale(mpu9250_handle_t handle, mpu9250_scale_data_t 
     int ret;
     uint8_t accel_raw_data[6];
 
-    ret = handle->_read(handle, MPU9250_ACCEL_XOUT_H, accel_raw_data, 6, TIMEOUT_MS_DEFAULT);
+    ret = handle->_read(handle->hw_info, MPU9250_ACCEL_XOUT_H, accel_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
         STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
@@ -383,7 +395,7 @@ stm_err_t mpu9250_get_gyro_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw_
     int ret;
     uint8_t gyro_raw_data[6];
 
-    ret = handle->_read(handle, MPU9250_GYRO_XOUT_H, gyro_raw_data, 6, TIMEOUT_MS_DEFAULT);
+    ret = handle->_read(handle->hw_info, MPU9250_GYRO_XOUT_H, gyro_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
         STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
@@ -405,7 +417,7 @@ stm_err_t mpu9250_get_gyro_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *ca
     int ret;
     uint8_t gyro_raw_data[6];
 
-    ret = handle->_read(handle, MPU9250_GYRO_XOUT_H, gyro_raw_data, 6, TIMEOUT_MS_DEFAULT);
+    ret = handle->_read(handle->hw_info, MPU9250_GYRO_XOUT_H, gyro_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
         STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);
@@ -426,7 +438,7 @@ stm_err_t mpu9250_get_gyro_scale(mpu9250_handle_t handle, mpu9250_scale_data_t *
 
     int ret;
     uint8_t gyro_raw_data[6];
-    ret = handle->_read(handle, MPU9250_GYRO_XOUT_H, gyro_raw_data, 6, TIMEOUT_MS_DEFAULT);
+    ret = handle->_read(handle->hw_info, MPU9250_GYRO_XOUT_H, gyro_raw_data, 6, TIMEOUT_MS_DEFAULT);
     if (ret) {
         STM_LOGE(MPU9250_TAG, MPU9250_GET_DATA_ERR_STR);
         mutex_unlock(handle->lock);

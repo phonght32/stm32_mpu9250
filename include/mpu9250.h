@@ -108,6 +108,10 @@ typedef enum {
 } mpu9250_if_protocol_t;
 
 typedef struct {
+    i2c_num_t               i2c_num;        /*!< I2C num */
+} mpu9250_hardware_info_t;
+
+typedef struct {
     mpu9250_clksel_t        clksel;         /*!< MPU9250 clock source */
     mpu9250_dlpf_cfg_t      dlpf_cfg;       /*!< MPU9250 digital low pass filter (DLPF) */
     mpu9250_sleep_mode_t    sleep_mode;     /*!< MPU9250 sleep mode */
@@ -116,7 +120,7 @@ typedef struct {
     mpu9250_accel_bias_t    accel_bias;     /*!< Acceleromter bias */
     mpu9250_gyro_bias_t     gyro_bias;      /*!< Gyroscope bias */
     mpu9250_if_protocol_t   if_protocol;    /*!< Interface protocol */
-    i2c_num_t               i2c_num;        /*!< I2C num */
+    mpu9250_hardware_info_t         hw_info;        /*!< Hardware information */
 } mpu9250_cfg_t;
 
 /*

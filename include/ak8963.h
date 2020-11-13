@@ -69,13 +69,13 @@ typedef struct {
 } ak8963_sens_adj_t;
 
 typedef enum {
-    AK8963_MODE_PWR_DOWN = 0x00,                 /*!< AK8963 mode power down */
-    AK8963_MODE_SINGLE_MEASUREMENT = 0x01,       /*!< AK8963 mode single measurement */
-    AK8963_MODE_CONT_MEASUREMENT_1 = 0x02,       /*!< AK8963 mode continous measurement 1 */
-    AK8963_MODE_EXT_TRIG_MEASUREMENT = 0x04,     /*!< AK8963 mode external trigger measurement */
-    AK8963_MODE_CONT_MEASUREMENT_2 = 0x06,       /*!< AK8963 mode continous measurement 2 */
-    AK8963_MODE_SELF_TEST = 0x08,                /*!< AK8963 mode self test */
-    AK8963_MODE_FUSE_ROM_ACCESS = 0x0F,          /*!< AK8963 mode fuse ROM access */
+    AK8963_MODE_PWR_DOWN = 0x00,                /*!< AK8963 mode power down */
+    AK8963_MODE_SINGLE_MEASUREMENT = 0x01,      /*!< AK8963 mode single measurement */
+    AK8963_MODE_CONT_MEASUREMENT_1 = 0x02,      /*!< AK8963 mode continous measurement 1 */
+    AK8963_MODE_EXT_TRIG_MEASUREMENT = 0x04,    /*!< AK8963 mode external trigger measurement */
+    AK8963_MODE_CONT_MEASUREMENT_2 = 0x06,      /*!< AK8963 mode continous measurement 2 */
+    AK8963_MODE_SELF_TEST = 0x08,               /*!< AK8963 mode self test */
+    AK8963_MODE_FUSE_ROM_ACCESS = 0x0F,         /*!< AK8963 mode fuse ROM access */
     AK8963_MODE_MAX
 } ak8963_mode_t;
 
@@ -92,11 +92,15 @@ typedef enum {
 } ak8963_if_protocol_t;
 
 typedef struct {
+    i2c_num_t                   i2c_num;        /*!< AK8963 I2C num */
+} ak8963_hardware_info_t;
+
+typedef struct {
     ak8963_mode_t               opr_mode;       /*!< AK8963 operatkion mode */
     ak8963_mfs_sel_t            mfs_sel;        /*!< AK8963 magnetometer full scale range */
     ak8963_hard_iron_bias_t     mag_bias;       /*!< AK8963 bias data */
     ak8963_if_protocol_t        if_protocol;    /*!< AK8963 interface protocol */
-    i2c_num_t                   i2c_num;        /*!< AK8963 I2C num */
+    ak8963_hardware_info_t      hw_info;        /*!< AK8963 hardware information */
 } ak8963_cfg_t;
 
 /*
