@@ -204,6 +204,13 @@ stm_err_t ak8963_get_mag_sens_adj(ak8963_handle_t handle, ak8963_sens_adj_t *asa
  */
 void ak8963_auto_calib(ak8963_handle_t handle);
 
+/*
+ * @brief   Destroy handle structure.
+ * @param   handle Handle structure.
+ * @return  None.
+ */
+void ak8963_destroy(ak8963_handle_t handle);
+
 
 #ifdef __cplusplus
 }

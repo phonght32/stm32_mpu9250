@@ -251,6 +251,13 @@ stm_err_t mpu9250_get_gyro_bias(mpu9250_handle_t handle, mpu9250_gyro_bias_t *gy
  */
 void mpu9250_auto_calib(mpu9250_handle_t handle);
 
+/*
+ * @brief   Destroy handle structure.
+ * @param   handle Handle structure.
+ * @return  None.
+ */
+void mpu9250_destroy(mpu9250_handle_t handle);
+
 
 #ifdef __cplusplus
 }

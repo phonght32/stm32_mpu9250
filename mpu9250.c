@@ -566,3 +566,7 @@ void mpu9250_auto_calib(mpu9250_handle_t handle)
     handle->gyro_bias.z_axis = mean_gz;
 }
 
+void mpu9250_destroy(mpu9250_handle_t handle)
+{
+    free(handle);
+}

@@ -413,3 +413,8 @@ void ak8963_auto_calib(ak8963_handle_t handle)
     handle->soft_iron_corr.y_axis = mag_scale_avg / ((float)scale_temp[1]);
     handle->soft_iron_corr.z_axis = mag_scale_avg / ((float)scale_temp[2]);
 }
+
+void ak8963_destroy(ak8963_handle_t handle)
+{
+    free(handle);
+}
