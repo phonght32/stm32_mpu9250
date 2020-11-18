@@ -30,11 +30,16 @@
 #define TIMEOUT_MS_DEFAULT          100         /*!< Default MPU9250 I2C communiation timeout */
 #define BUFFER_CALIB_DEFAULT        1000        /*!< Default the number of sample data when calibrate */
 
-#define AK8963_INIT_ERR_STR        "ak8963 init error"
-#define AK8963_MALLOC_ERR_STR      "ak8963 malloc error"
-#define AK8963_TRANS_ERR_STR       "ak8963 write registers error"
-#define AK8963_REC_ERR_STR         "ak8963 read registers error"
-#define AK8963_GET_DATA_ERR_STR    "ak8963 get data error"
+#define AK8963_INIT_ERR_STR         "ak8963 init error"
+#define AK8963_MALLOC_ERR_STR       "ak8963 malloc error"
+#define AK8963_TRANS_ERR_STR        "ak8963 write registers error"
+#define AK8963_REC_ERR_STR          "ak8963 read registers error"
+#define AK8963_GET_DATA_ERR_STR     "ak8963 get data error"
+#define AK8963_SET_BIAS_ERR_STR     "ak8963 set bias error"
+#define AK8963_SET_CORR_ERR_STR     "ak8963 set corr error"
+#define AK8963_GET_BIAS_ERR_STR     "ak8963 get bias error"
+#define AK8963_GET_CORR_ERR_STR     "ak8963 get corr error"
+#define AK8963_GET_SENS_ERR_STR     "ak8963 get sens error"
 
 #define mutex_lock(x)               while (xSemaphoreTake(x, portMAX_DELAY) != pdPASS)
 #define mutex_unlock(x)             xSemaphoreGive(x)
@@ -93,7 +98,7 @@ static read_func _get_read_func(ak8963_if_protocol_t if_protocol)
         return _i2c_read_func;
     }
 
-    return _i2c_read_func;
+    return NULL;
 }
 
 static write_func _get_write_func(ak8963_if_protocol_t if_protocol)
@@ -102,7 +107,7 @@ static write_func _get_write_func(ak8963_if_protocol_t if_protocol)
         return _i2c_write_func;
     }
 
-    return _i2c_write_func;
+    return NULL;
 }
 
 static void _ak8963_cleanup(ak8963_handle_t handle) {
@@ -189,6 +194,9 @@ ak8963_handle_t ak8963_init(ak8963_cfg_t *config)
 
 stm_err_t ak8963_get_mag_raw(ak8963_handle_t handle, ak8963_raw_data_t *raw_data)
 {
+    AK8963_CHECK(handle, AK8963_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+    AK8963_CHECK(raw_data, AK8963_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
 
     int ret;
@@ -217,6 +225,9 @@ stm_err_t ak8963_get_mag_raw(ak8963_handle_t handle, ak8963_raw_data_t *raw_data
 
 stm_err_t ak8963_get_mag_cali(ak8963_handle_t handle, ak8963_cali_data_t *cali_data)
 {
+    AK8963_CHECK(handle, AK8963_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+    AK8963_CHECK(cali_data, AK8963_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
 
     int ret;
@@ -249,6 +260,9 @@ stm_err_t ak8963_get_mag_cali(ak8963_handle_t handle, ak8963_cali_data_t *cali_d
 
 stm_err_t ak8963_get_mag_scale(ak8963_handle_t handle, ak8963_scale_data_t *scale_data)
 {
+    AK8963_CHECK(handle, AK8963_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+    AK8963_CHECK(scale_data, AK8963_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
 
     int ret;
@@ -279,49 +293,69 @@ stm_err_t ak8963_get_mag_scale(ak8963_handle_t handle, ak8963_scale_data_t *scal
     return 0;
 }
 
-void ak8963_set_hard_iron_bias(ak8963_handle_t handle, ak8963_hard_iron_bias_t hard_iron_bias)
+stm_err_t ak8963_set_hard_iron_bias(ak8963_handle_t handle, ak8963_hard_iron_bias_t hard_iron_bias)
 {
+    AK8963_CHECK(handle, AK8963_SET_BIAS_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
     handle->hard_iron_bias.x_axis = hard_iron_bias.x_axis;
     handle->hard_iron_bias.y_axis = hard_iron_bias.y_axis;
     handle->hard_iron_bias.z_axis = hard_iron_bias.z_axis;
     mutex_unlock(handle->lock);
+
+    return STM_OK;
 }
 
-void ak8963_get_hard_iron_bias(ak8963_handle_t handle, ak8963_hard_iron_bias_t *hard_iron_bias)
+stm_err_t ak8963_get_hard_iron_bias(ak8963_handle_t handle, ak8963_hard_iron_bias_t *hard_iron_bias)
 {
+    AK8963_CHECK(handle, AK8963_GET_BIAS_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
     hard_iron_bias->x_axis = handle->hard_iron_bias.x_axis;
     hard_iron_bias->y_axis = handle->hard_iron_bias.y_axis;
     hard_iron_bias->z_axis = handle->hard_iron_bias.z_axis;
     mutex_unlock(handle->lock);
+
+    return STM_OK;
 }
 
-void ak8963_set_soft_iron_corr(ak8963_handle_t handle, ak8963_soft_iron_corr_t soft_iron_corr)
+stm_err_t ak8963_set_soft_iron_corr(ak8963_handle_t handle, ak8963_soft_iron_corr_t soft_iron_corr)
 {
+    AK8963_CHECK(handle, AK8963_SET_CORR_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
     handle->soft_iron_corr.x_axis = soft_iron_corr.x_axis;
     handle->soft_iron_corr.y_axis = soft_iron_corr.y_axis;
     handle->soft_iron_corr.z_axis = soft_iron_corr.z_axis;
     mutex_unlock(handle->lock);
+
+    return STM_OK;
 }
 
-void ak8963_get_soft_iron_corr(ak8963_handle_t handle, ak8963_soft_iron_corr_t *soft_iron_corr)
+stm_err_t ak8963_get_soft_iron_corr(ak8963_handle_t handle, ak8963_soft_iron_corr_t *soft_iron_corr)
 {
+    AK8963_CHECK(handle, AK8963_GET_CORR_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
     soft_iron_corr->x_axis = handle->soft_iron_corr.x_axis;
     soft_iron_corr->y_axis = handle->soft_iron_corr.y_axis;
     soft_iron_corr->z_axis = handle->soft_iron_corr.z_axis;
     mutex_unlock(handle->lock);
+
+    return STM_OK;
 }
 
-void ak8963_get_mag_sens_adj(ak8963_handle_t handle, ak8963_sens_adj_t *asa)
+stm_err_t ak8963_get_mag_sens_adj(ak8963_handle_t handle, ak8963_sens_adj_t *asa)
 {
+    AK8963_CHECK(handle, AK8963_GET_SENS_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
     asa->x_axis = handle->asa.x_axis;
     asa->y_axis = handle->asa.y_axis;
     asa->z_axis = handle->asa.z_axis;
     mutex_unlock(handle->lock);
+
+    return STM_OK;
 }
 
 void ak8963_auto_calib(ak8963_handle_t handle)

@@ -123,7 +123,7 @@ ak8963_handle_t ak8963_init(ak8963_cfg_t *config);
  * @param   raw_data Raw data.
  * @return
  *      - STM_OK:   Success.
- *      - STM_FAIL: Fail.
+ *      - Others:   Fail.
  */
 stm_err_t ak8963_get_mag_raw(ak8963_handle_t handle, ak8963_raw_data_t *raw_data);
 
@@ -133,7 +133,7 @@ stm_err_t ak8963_get_mag_raw(ak8963_handle_t handle, ak8963_raw_data_t *raw_data
  * @param   cali data Cali data.
  * @return
  *      - STM_OK:   Success.
- *      - STM_FAIL: Fail.
+ *      - Others:   Fail.
  */
 stm_err_t ak8963_get_mag_cali(ak8963_handle_t handle, ak8963_cali_data_t *cali_data);
 
@@ -143,7 +143,7 @@ stm_err_t ak8963_get_mag_cali(ak8963_handle_t handle, ak8963_cali_data_t *cali_d
  * @param   scale_data Scale data.
  * @return
  *      - STM_OK:   Success.
- *      - STM_FAIL: Fail.
+ *      - Others:   Fail.
  */
 stm_err_t ak8963_get_mag_scale(ak8963_handle_t handle, ak8963_scale_data_t *scale_data);
 
@@ -151,41 +151,51 @@ stm_err_t ak8963_get_mag_scale(ak8963_handle_t handle, ak8963_scale_data_t *scal
  * @brief   Set magnetometer hard iron bias value.
  * @param   handle Handle structure.
  * @param   hard_iron_bias Hard iron bias data.
- * @return  None.
+ * @return
+ *      - STM_OK:   Success.
+ *      - Others:   Fail.
  */
-void ak8963_set_hard_iron_bias(ak8963_handle_t handle, ak8963_hard_iron_bias_t hard_iron_bias);
+stm_err_t ak8963_set_hard_iron_bias(ak8963_handle_t handle, ak8963_hard_iron_bias_t hard_iron_bias);
 
 /*
  * @brief   Get magnetometer get hard iron bias value.
  * @param   handle Handle structure.
  * @param   hard_iron_bias Hard iron bias data.
- * @return  None.
+ * @return
+ *      - STM_OK:   Success.
+ *      - Others:   Fail.
  */
-void ak8963_get_hard_iron_bias(ak8963_handle_t handle, ak8963_hard_iron_bias_t *hard_iron_bias);
+stm_err_t ak8963_get_hard_iron_bias(ak8963_handle_t handle, ak8963_hard_iron_bias_t *hard_iron_bias);
 
 /*
  * @brief   Set magnetometer soft iron correction data.
  * @param   handle Handle structure.
  * @param   soft_iron_corr Soft iron correction data.
- * @return  None.
+ * @return
+ *      - STM_OK:   Success.
+ *      - Others:   Fail.
  */
-void ak8963_set_soft_iron_corr(ak8963_handle_t handle, ak8963_soft_iron_corr_t soft_iron_corr);
+stm_err_t ak8963_set_soft_iron_corr(ak8963_handle_t handle, ak8963_soft_iron_corr_t soft_iron_corr);
 
 /*
  * @brief   Get magnetometer soft iron correction data.
  * @param   handle Handle structure.
  * @param   soft_iron_corr Soft iron correction data.
- * @return  None.
+ * @return
+ *      - STM_OK:   Success.
+ *      - Others:   Fail.
  */
-void ak8963_get_soft_iron_corr(ak8963_handle_t handle, ak8963_soft_iron_corr_t *soft_iron_corr);
+stm_err_t ak8963_get_soft_iron_corr(ak8963_handle_t handle, ak8963_soft_iron_corr_t *soft_iron_corr);
 
 /*
  * @brief   Get magnetometer sensitive adjust data.
  * @param   handle Handle structure.
  * @param   mag_sens_adj Sensitive adjustment data.
- * @return  None.
+ * @return
+ *      - STM_OK:   Success.
+ *      - Others:   Fail.
  */
-void ak8963_get_mag_sens_adj(ak8963_handle_t handle, ak8963_sens_adj_t *asa);
+stm_err_t ak8963_get_mag_sens_adj(ak8963_handle_t handle, ak8963_sens_adj_t *asa);
 
 /*
  * @brief   Auto calibrate all magnetometer bias value.

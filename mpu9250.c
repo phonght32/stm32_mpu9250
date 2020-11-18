@@ -116,6 +116,8 @@
 #define MPU9250_TRANS_ERR_STR           "mpu9250 write registers error"
 #define MPU9250_REC_ERR_STR             "mpu9250 read registers error"
 #define MPU9250_GET_DATA_ERR_STR        "mpu9250 get data error"
+#define MPU9250_SET_BIAS_ERR_STR        "mu9250 set bias error"
+#define MPU9250_GET_BIAS_ERR_STR        "mu9250 get bias error"
 
 #define mutex_lock(x)                   while (xSemaphoreTake(x, portMAX_DELAY) != pdPASS)
 #define mutex_unlock(x)                 xSemaphoreGive(x)
@@ -143,7 +145,7 @@ typedef struct mpu9250 {
     float                   accel_scaling_factor;   /*!< MPU9250 accelerometer scaling factor */
     float                   gyro_scaling_factor;    /*!< MPU9250 gyroscope scaling factor */
     SemaphoreHandle_t       lock;                   /*!< MPU9250 mutex */
-    mpu9250_hardware_info_t         hw_info;                /*!< MPU9250 hardware information */
+    mpu9250_hardware_info_t hw_info;                /*!< MPU9250 hardware information */
     read_func               _read;                  /*!< MPU9250 read function */
     write_func              _write;                 /*!< MPU9250 write function */
 } mpu9250_t;
@@ -177,7 +179,7 @@ static read_func _get_read_func(mpu9250_if_protocol_t if_protocol)
         return _i2c_read_func;
     }
 
-    return _i2c_read_func;
+    return NULL;
 }
 
 static write_func _get_write_func(mpu9250_if_protocol_t if_protocol)
@@ -186,7 +188,7 @@ static write_func _get_write_func(mpu9250_if_protocol_t if_protocol)
         return _i2c_write_func;
     }
 
-    return _i2c_write_func;
+    return NULL;
 }
 
 static void _mpu9250_cleanup(mpu9250_handle_t handle)
@@ -324,6 +326,9 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
 
 stm_err_t mpu9250_get_accel_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw_data)
 {
+    MPU9250_CHECK(handle, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+    MPU9250_CHECK(raw_data, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
 
     int ret;
@@ -346,6 +351,9 @@ stm_err_t mpu9250_get_accel_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw
 
 stm_err_t mpu9250_get_accel_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *cali_data)
 {
+    MPU9250_CHECK(handle, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+    MPU9250_CHECK(cali_data, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
 
     int ret;
@@ -368,6 +376,9 @@ stm_err_t mpu9250_get_accel_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *c
 
 stm_err_t mpu9250_get_accel_scale(mpu9250_handle_t handle, mpu9250_scale_data_t *scale_data)
 {
+    MPU9250_CHECK(handle, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+    MPU9250_CHECK(scale_data, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
 
     int ret;
@@ -390,6 +401,9 @@ stm_err_t mpu9250_get_accel_scale(mpu9250_handle_t handle, mpu9250_scale_data_t 
 
 stm_err_t mpu9250_get_gyro_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw_data)
 {
+    MPU9250_CHECK(handle, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+    MPU9250_CHECK(raw_data, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
 
     int ret;
@@ -412,6 +426,9 @@ stm_err_t mpu9250_get_gyro_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw_
 
 stm_err_t mpu9250_get_gyro_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *cali_data)
 {
+    MPU9250_CHECK(handle, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+    MPU9250_CHECK(cali_data, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
 
     int ret;
@@ -434,6 +451,9 @@ stm_err_t mpu9250_get_gyro_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *ca
 
 stm_err_t mpu9250_get_gyro_scale(mpu9250_handle_t handle, mpu9250_scale_data_t *scale_data)
 {
+    MPU9250_CHECK(handle, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+    MPU9250_CHECK(scale_data, MPU9250_GET_DATA_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
 
     int ret;
@@ -453,40 +473,56 @@ stm_err_t mpu9250_get_gyro_scale(mpu9250_handle_t handle, mpu9250_scale_data_t *
     return STM_OK;
 }
 
-void mpu9250_set_accel_bias(mpu9250_handle_t handle, mpu9250_accel_bias_t accel_bias)
+stm_err_t mpu9250_set_accel_bias(mpu9250_handle_t handle, mpu9250_accel_bias_t accel_bias)
 {
+    MPU9250_CHECK(handle, MPU9250_SET_BIAS_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
     handle->accel_bias.x_axis = accel_bias.x_axis;
     handle->accel_bias.y_axis = accel_bias.y_axis;
     handle->accel_bias.z_axis = accel_bias.z_axis;
     mutex_unlock(handle->lock);
+
+    return STM_OK;
 }
 
-void mpu9250_set_gyro_bias(mpu9250_handle_t handle, mpu9250_gyro_bias_t gyro_bias)
+stm_err_t mpu9250_set_gyro_bias(mpu9250_handle_t handle, mpu9250_gyro_bias_t gyro_bias)
 {
+    MPU9250_CHECK(handle, MPU9250_SET_BIAS_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
     handle->gyro_bias.x_axis = gyro_bias.x_axis;
     handle->gyro_bias.y_axis = gyro_bias.y_axis;
     handle->gyro_bias.z_axis = gyro_bias.z_axis;
     mutex_unlock(handle->lock);
+
+    return STM_OK;
 }
 
-void mpu9250_get_accel_bias(mpu9250_handle_t handle, mpu9250_accel_bias_t *accel_bias)
+stm_err_t mpu9250_get_accel_bias(mpu9250_handle_t handle, mpu9250_accel_bias_t *accel_bias)
 {
+    MPU9250_CHECK(handle, MPU9250_GET_BIAS_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
     accel_bias->x_axis = handle->accel_bias.x_axis;
     accel_bias->y_axis = handle->accel_bias.y_axis;
     accel_bias->z_axis = handle->accel_bias.z_axis;
     mutex_unlock(handle->lock);
+
+    return STM_OK;
 }
 
-void mpu9250_get_gyro_bias(mpu9250_handle_t handle, mpu9250_gyro_bias_t *gyro_bias)
+stm_err_t mpu9250_get_gyro_bias(mpu9250_handle_t handle, mpu9250_gyro_bias_t *gyro_bias)
 {
+    MPU9250_CHECK(handle, MPU9250_GET_BIAS_ERR_STR, return STM_ERR_INVALID_ARG);
+
     mutex_lock(handle->lock);
     gyro_bias->x_axis = handle->gyro_bias.x_axis;
     gyro_bias->y_axis = handle->gyro_bias.y_axis;
     gyro_bias->z_axis = handle->gyro_bias.z_axis;
     mutex_unlock(handle->lock);
+
+    return STM_OK;
 }
 
 void mpu9250_auto_calib(mpu9250_handle_t handle)

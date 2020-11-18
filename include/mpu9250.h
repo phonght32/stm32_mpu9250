@@ -120,7 +120,7 @@ typedef struct {
     mpu9250_accel_bias_t    accel_bias;     /*!< Acceleromter bias */
     mpu9250_gyro_bias_t     gyro_bias;      /*!< Gyroscope bias */
     mpu9250_if_protocol_t   if_protocol;    /*!< Interface protocol */
-    mpu9250_hardware_info_t         hw_info;        /*!< Hardware information */
+    mpu9250_hardware_info_t hw_info;        /*!< Hardware information */
 } mpu9250_cfg_t;
 
 /*
@@ -143,7 +143,7 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config);
  * @param   raw_data Raw data.
  * @return
  *      - STM_OK:   Success.
- *      - STM_FAIL: Fail.
+ *      - Others:   Fail.
  */
 stm_err_t mpu9250_get_accel_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw_data);
 
@@ -153,7 +153,7 @@ stm_err_t mpu9250_get_accel_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw
  * @param   raw_data Raw data.
  * @return
  *      - STM_OK:   Success.
- *      - STM_FAIL: Fail.
+ *      - Others:   Fail.
  */
 
 stm_err_t mpu9250_get_accel_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *cali_data);
@@ -164,7 +164,7 @@ stm_err_t mpu9250_get_accel_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *c
  * @param   cali_data Calibrated data.
  * @return
  *      - STM_OK:   Success.
- *      - STM_FAIL: Fail.
+ *      - Others:   Fail.
  */
 
 stm_err_t mpu9250_get_accel_scale(mpu9250_handle_t handle, mpu9250_scale_data_t *scale_data);
@@ -175,7 +175,7 @@ stm_err_t mpu9250_get_accel_scale(mpu9250_handle_t handle, mpu9250_scale_data_t 
  * @param   scale_data Scaled data.
  * @return
  *      - STM_OK:   Success.
- *      - STM_FAIL: Fail.
+ *      - Others:   Fail.
  */
 
 stm_err_t mpu9250_get_gyro_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw_data);
@@ -186,7 +186,7 @@ stm_err_t mpu9250_get_gyro_raw(mpu9250_handle_t handle, mpu9250_raw_data_t *raw_
  * @param   cali_data Calibrated data.
  * @return
  *      - STM_OK:   Success.
- *      - STM_FAIL: Fail.
+ *      - Others:   Fail.
  */
 
 stm_err_t mpu9250_get_gyro_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *cali_data);
@@ -198,7 +198,7 @@ stm_err_t mpu9250_get_gyro_cali(mpu9250_handle_t handle, mpu9250_cali_data_t *ca
  * @param   scale_data Scaled data.
  * @return
  *      - STM_OK:   Success.
- *      - STM_FAIL: Fail.
+ *      - Others:   Fail.
  */
 
 stm_err_t mpu9250_get_gyro_scale(mpu9250_handle_t handle, mpu9250_scale_data_t *scale_data);
@@ -207,33 +207,41 @@ stm_err_t mpu9250_get_gyro_scale(mpu9250_handle_t handle, mpu9250_scale_data_t *
  * @brief   Set accelerometer bias value.
  * @param   handle Handle structure.
  * @param   accel_bias Bias data.
- * @return  None.
+ * @return
+ *      - STM_OK:   Success.
+ *      - Others:   Fail.
  */
-void mpu9250_set_accel_bias(mpu9250_handle_t handle, mpu9250_accel_bias_t accel_bias);
+stm_err_t mpu9250_set_accel_bias(mpu9250_handle_t handle, mpu9250_accel_bias_t accel_bias);
 
 /*
  * @brief   Set gyroscopre bias value.
  * @param   handle Handle structure.
  * @param   gyro_bias Bias data.
- * @return  None.
+ * @return
+ *      - STM_OK:   Success.
+ *      - Others:   Fail.
  */
-void mpu9250_set_gyro_bias(mpu9250_handle_t handle, mpu9250_gyro_bias_t gyro_bias);
+stm_err_t mpu9250_set_gyro_bias(mpu9250_handle_t handle, mpu9250_gyro_bias_t gyro_bias);
 
 /*
  * @brief   Get accelerometer bias value.
  * @param   handle Handle structure.
  * @param   accel_bias Bias data.
- * @return  None.
+ * @return
+ *      - STM_OK:   Success.
+ *      - Others:   Fail.
  */
-void mpu9250_get_accel_bias(mpu9250_handle_t handle, mpu9250_accel_bias_t *accel_bias);
+stm_err_t mpu9250_get_accel_bias(mpu9250_handle_t handle, mpu9250_accel_bias_t *accel_bias);
 
 /*
  * @brief   Get gyroscopre bias value.
  * @param   handle Handle structure.
  * @param   gyro_bias Bias data.
- * @return  None.
+ * @return
+ *      - STM_OK:   Success.
+ *      - Others:   Fail.
  */
-void mpu9250_get_gyro_bias(mpu9250_handle_t handle, mpu9250_gyro_bias_t *gyro_bias);
+stm_err_t mpu9250_get_gyro_bias(mpu9250_handle_t handle, mpu9250_gyro_bias_t *gyro_bias);
 
 /*
  * @brief   Auto calibrate all acceleromter and gyroscope bias value.
