@@ -159,7 +159,7 @@ static stm_err_t _i2c_write_func(mpu9250_hardware_info_t hw_info, uint8_t reg_ad
         buf_send[i + 1] = buf[i];
     }
 
-    MPU9250_CHECK(!i2c_write_bytes(hw_info.i2c_num, MPU9250_ADDR, buf_send, len + 1, timeout_ms), MPU9250_TRANS_ERR_STR, return STM_FAIL);
+    MPU9250_CHECK(!i2c_master_write_bytes(hw_info.i2c_num, MPU9250_ADDR, buf_send, len + 1, timeout_ms), MPU9250_TRANS_ERR_STR, return STM_FAIL);
     return STM_OK;
 }
 
@@ -167,8 +167,8 @@ static stm_err_t _i2c_read_func(mpu9250_hardware_info_t hw_info, uint8_t reg_add
 {
     uint8_t buffer[1];
     buffer[0] = reg_addr;
-    MPU9250_CHECK(!i2c_write_bytes(hw_info.i2c_num, MPU9250_ADDR, buffer, 1, timeout_ms), MPU9250_REC_ERR_STR, return STM_FAIL);
-    MPU9250_CHECK(!i2c_read_bytes(hw_info.i2c_num, MPU9250_ADDR, buf, len, timeout_ms), MPU9250_REC_ERR_STR, return STM_FAIL);
+    MPU9250_CHECK(!i2c_master_write_bytes(hw_info.i2c_num, MPU9250_ADDR, buffer, 1, timeout_ms), MPU9250_REC_ERR_STR, return STM_FAIL);
+    MPU9250_CHECK(!i2c_master_read_bytes(hw_info.i2c_num, MPU9250_ADDR, buf, len, timeout_ms), MPU9250_REC_ERR_STR, return STM_FAIL);
 
     return STM_OK;
 }

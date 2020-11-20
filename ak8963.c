@@ -78,7 +78,7 @@ static stm_err_t _i2c_write_func(ak8963_hardware_info_t hw_info, uint8_t reg_add
         buf_send[i + 1] = buf[i];
     }
 
-    AK8963_CHECK(!i2c_write_bytes(hw_info.i2c_num, AK8963_ADDR, buf_send, len + 1, timeout_ms), AK8963_TRANS_ERR_STR, return STM_FAIL);
+    AK8963_CHECK(!i2c_master_write_bytes(hw_info.i2c_num, AK8963_ADDR, buf_send, len + 1, timeout_ms), AK8963_TRANS_ERR_STR, return STM_FAIL);
     return STM_OK;
 }
 
@@ -86,8 +86,8 @@ static stm_err_t _i2c_read_func(ak8963_hardware_info_t hw_info, uint8_t reg_addr
 {
     uint8_t buffer[1];
     buffer[0] = reg_addr;
-    AK8963_CHECK(!i2c_write_bytes(hw_info.i2c_num, AK8963_ADDR, buffer, 1, timeout_ms), AK8963_REC_ERR_STR, return STM_FAIL);
-    AK8963_CHECK(!i2c_read_bytes(hw_info.i2c_num, AK8963_ADDR, buf, len, timeout_ms), AK8963_REC_ERR_STR, return STM_FAIL);
+    AK8963_CHECK(!i2c_master_write_bytes(hw_info.i2c_num, AK8963_ADDR, buffer, 1, timeout_ms), AK8963_REC_ERR_STR, return STM_FAIL);
+    AK8963_CHECK(!i2c_master_read_bytes(hw_info.i2c_num, AK8963_ADDR, buf, len, timeout_ms), AK8963_REC_ERR_STR, return STM_FAIL);
 
     return STM_OK;
 }
