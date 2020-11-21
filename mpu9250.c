@@ -130,8 +130,8 @@ static const char* MPU9250_TAG = "MPU9250";
         action;                                                                             \
         }
 
-typedef stm_err_t (*read_func)(mpu9250_hardware_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
-typedef stm_err_t (*write_func)(mpu9250_hardware_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
+typedef stm_err_t (*read_func)(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
+typedef stm_err_t (*write_func)(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
 
 typedef struct mpu9250 {
     mpu9250_clksel_t        clksel;                 /*!< MPU9250 clock source */
@@ -145,12 +145,12 @@ typedef struct mpu9250 {
     float                   accel_scaling_factor;   /*!< MPU9250 accelerometer scaling factor */
     float                   gyro_scaling_factor;    /*!< MPU9250 gyroscope scaling factor */
     SemaphoreHandle_t       lock;                   /*!< MPU9250 mutex */
-    mpu9250_hardware_info_t hw_info;                /*!< MPU9250 hardware information */
+    mpu9250_hw_info_t       hw_info;                /*!< MPU9250 hardware information */
     read_func               _read;                  /*!< MPU9250 read function */
     write_func              _write;                 /*!< MPU9250 write function */
 } mpu9250_t;
 
-static stm_err_t _i2c_write_func(mpu9250_hardware_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
+static stm_err_t _i2c_write_func(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
 {
     uint8_t buf_send[len + 1];
     buf_send[0] = reg_addr;
@@ -163,7 +163,7 @@ static stm_err_t _i2c_write_func(mpu9250_hardware_info_t hw_info, uint8_t reg_ad
     return STM_OK;
 }
 
-static stm_err_t _i2c_read_func(mpu9250_hardware_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
+static stm_err_t _i2c_read_func(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
 {
     uint8_t buffer[1];
     buffer[0] = reg_addr;
