@@ -141,7 +141,7 @@ typedef struct mpu9250 {
     mpu9250_fs_sel_t        fs_sel;                 /*!< MPU9250 gyroscope full scale range */
     mpu9250_accel_bias_t    accel_bias;             /*!< MPU9250 acclerometer bias */
     mpu9250_gyro_bias_t     gyro_bias;              /*!< MPU9250 gyroscope bias */
-    mpu9250_if_protocol_t   if_protocol;            /*!< MPU9250 interface protocol */
+    mpu9250_comm_mode_t     comm_mode;              /*!< MPU9250 interface protocol */
     float                   accel_scaling_factor;   /*!< MPU9250 accelerometer scaling factor */
     float                   gyro_scaling_factor;    /*!< MPU9250 gyroscope scaling factor */
     SemaphoreHandle_t       lock;                   /*!< MPU9250 mutex */
@@ -173,18 +173,18 @@ static stm_err_t _i2c_read_func(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uin
     return STM_OK;
 }
 
-static read_func _get_read_func(mpu9250_if_protocol_t if_protocol)
+static read_func _get_read_func(mpu9250_comm_mode_t comm_mode)
 {
-    if (if_protocol == MPU9250_IF_I2C) {
+    if (comm_mode == MPU9250_COMM_MODE_I2C) {
         return _i2c_read_func;
     }
 
     return NULL;
 }
 
-static write_func _get_write_func(mpu9250_if_protocol_t if_protocol)
+static write_func _get_write_func(mpu9250_comm_mode_t comm_mode)
 {
-    if (if_protocol == MPU9250_IF_I2C) {
+    if (comm_mode == MPU9250_COMM_MODE_I2C) {
         return _i2c_write_func;
     }
 
@@ -205,7 +205,7 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
     MPU9250_CHECK(config->sleep_mode < MPU9250_SLEEP_MODE_MAX, MPU9250_INIT_ERR_STR, return NULL);
     MPU9250_CHECK(config->fs_sel < MPU9250_FS_SEL_MAX, MPU9250_INIT_ERR_STR, return NULL);
     MPU9250_CHECK(config->afs_sel < MPU9250_AFS_SEL_MAX, MPU9250_INIT_ERR_STR, return NULL);
-    MPU9250_CHECK(config->if_protocol < MPU9250_IF_MAX, MPU9250_INIT_ERR_STR, return NULL);
+    MPU9250_CHECK(config->comm_mode < MPU9250_COMM_MODE_MAX, MPU9250_INIT_ERR_STR, return NULL);
 
     /* Allocate memory for handle structure */
     mpu9250_handle_t handle;
@@ -213,7 +213,7 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
     MPU9250_CHECK(handle, MPU9250_INIT_ERR_STR, return NULL);
 
     /* Get write function */
-    write_func _write = _get_write_func(config->if_protocol);
+    write_func _write = _get_write_func(config->comm_mode);
 
     /* Reset mpu9250 */
     uint8_t buffer = 0;
@@ -315,11 +315,11 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
     handle->dlpf_cfg = config->dlpf_cfg;
     handle->fs_sel = config->fs_sel;
     handle->sleep_mode = config->sleep_mode;
-    handle->if_protocol = config->if_protocol;
+    handle->comm_mode = config->comm_mode;
     handle->lock = mutex_create();
     handle->hw_info = config->hw_info;
-    handle->_read = _get_read_func(config->if_protocol);
-    handle->_write = _get_write_func(config->if_protocol);
+    handle->_read = _get_read_func(config->comm_mode);
+    handle->_write = _get_write_func(config->comm_mode);
 
     return handle;
 }

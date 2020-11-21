@@ -102,10 +102,10 @@ typedef enum {
 } mpu9250_afs_sel_t;
 
 typedef enum {
-    MPU9250_IF_I2C = 0,                     /*!< Interface over I2C */
-    MPU9250_IF_SPI,                         /*!< Interface over SPI */
-    MPU9250_IF_MAX
-} mpu9250_if_protocol_t;
+    MPU9250_COMM_MODE_I2C = 0,              /*!< Interface over I2C */
+    MPU9250_COMM_MODE_SPI,                  /*!< Interface over SPI */
+    MPU9250_COMM_MODE_MAX
+} mpu9250_comm_mode_t;
 
 typedef struct {
     i2c_num_t               i2c_num;        /*!< I2C num */
@@ -119,7 +119,7 @@ typedef struct {
     mpu9250_afs_sel_t       afs_sel;        /*!< MPU9250 accelerometer full scale range */
     mpu9250_accel_bias_t    accel_bias;     /*!< Acceleromter bias */
     mpu9250_gyro_bias_t     gyro_bias;      /*!< Gyroscope bias */
-    mpu9250_if_protocol_t   if_protocol;    /*!< Interface protocol */
+    mpu9250_comm_mode_t     comm_mode;      /*!< Interface protocol */
     mpu9250_hw_info_t       hw_info;        /*!< Hardware information */
 } mpu9250_cfg_t;
 
