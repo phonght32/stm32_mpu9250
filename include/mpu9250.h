@@ -27,9 +27,11 @@
 extern "C" {
 #endif
 
+#include "stdbool.h"
 #include "stm_err.h"
 #include "driver/i2c.h"
-
+#include "driver/spi.h"
+    
 typedef struct mpu9250 *mpu9250_handle_t;
 
 typedef struct {
@@ -109,6 +111,11 @@ typedef enum {
 
 typedef struct {
     i2c_num_t               i2c_num;        /*!< I2C num */
+    i2c_pins_pack_t         i2c_pins_pack;  /*!< I2C pins pack */
+    uint32_t                i2c_speed;      /*!< I2C speed */
+    spi_num_t               spi_num;        /*!< SPI num */
+    spi_pins_pack_t         spi_pins_pack;  /*!< SPI pins pack */
+    bool                    is_init;        /*!< Is hardware init */
 } mpu9250_hw_info_t;
 
 typedef struct {
@@ -127,9 +134,7 @@ typedef struct {
  * @brief   Initialize I2C communication and configure MPU9250 's parameters
  *          such as clock source, digital low pass filter (DLPF), sleep mode,
  *          gyroscope and accelerometer full scale range, bias value, ...
- * @note:   This function only get I2C_NUM to handler communication, not
- *          configure I2C 's parameters. You have to self configure I2C before
- *          pass I2C into this function.
+ * @note    Set is_init parameter to 1 if hardware already initialized.
  * @param   config Struct pointer.
  * @return
  *      - MPU9250 handle structure: Success.

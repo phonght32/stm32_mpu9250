@@ -130,6 +130,7 @@ static const char* MPU9250_TAG = "MPU9250";
         action;                                                                             \
         }
 
+typedef stm_err_t (*init_func)(mpu9250_hw_info_t hw_info);
 typedef stm_err_t (*read_func)(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
 typedef stm_err_t (*write_func)(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms);
 
@@ -150,6 +151,22 @@ typedef struct mpu9250 {
     write_func              _write;                 /*!< MPU9250 write function */
 } mpu9250_t;
 
+static stm_err_t _init_i2c(mpu9250_hw_info_t hw_info)
+{
+    i2c_cfg_t i2c_cfg;
+    i2c_cfg.i2c_num = hw_info.i2c_num;
+    i2c_cfg.i2c_pins_pack = hw_info.i2c_pins_pack;
+    i2c_cfg.clk_speed = hw_info.i2c_speed;
+    MPU9250_CHECK(!i2c_config(&i2c_cfg), MPU9250_INIT_ERR_STR, return STM_FAIL);
+
+    return STM_OK;
+}
+
+static stm_err_t _init_spi(mpu9250_hw_info_t hw_info)
+{
+    return STM_OK;
+}
+
 static stm_err_t _i2c_write_func(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
 {
     uint8_t buf_send[len + 1];
@@ -163,6 +180,11 @@ static stm_err_t _i2c_write_func(mpu9250_hw_info_t hw_info, uint8_t reg_addr, ui
     return STM_OK;
 }
 
+static stm_err_t _spi_write_func(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
+{
+    return STM_OK;
+}
+
 static stm_err_t _i2c_read_func(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
 {
     uint8_t buffer[1];
@@ -173,10 +195,28 @@ static stm_err_t _i2c_read_func(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uin
     return STM_OK;
 }
 
+static stm_err_t _spi_read_func(mpu9250_hw_info_t hw_info, uint8_t reg_addr, uint8_t *buf, uint16_t len, uint32_t timeout_ms)
+{
+    return STM_OK;
+}
+
+static init_func _get_init_func(mpu9250_comm_mode_t comm_mode)
+{
+    if (comm_mode == MPU9250_COMM_MODE_I2C) {
+        return _init_i2c;
+    } else {
+        return _init_spi;
+    }
+
+    return NULL;
+}
+
 static read_func _get_read_func(mpu9250_comm_mode_t comm_mode)
 {
     if (comm_mode == MPU9250_COMM_MODE_I2C) {
         return _i2c_read_func;
+    } else {
+        return _spi_read_func;
     }
 
     return NULL;
@@ -186,6 +226,8 @@ static write_func _get_write_func(mpu9250_comm_mode_t comm_mode)
 {
     if (comm_mode == MPU9250_COMM_MODE_I2C) {
         return _i2c_write_func;
+    } else {
+        return _spi_write_func;
     }
 
     return NULL;
@@ -212,6 +254,12 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
     handle = calloc(1, sizeof(mpu9250_t));
     MPU9250_CHECK(handle, MPU9250_INIT_ERR_STR, return NULL);
 
+    /* Init hardware */
+    if (!config->hw_info.is_init) {
+        init_func _init = _get_init_func(config->comm_mode);
+        MPU9250_CHECK(!_init(config->hw_info), MPU9250_INIT_ERR_STR, return NULL);
+    }
+
     /* Get write function */
     write_func _write = _get_write_func(config->comm_mode);
 
@@ -219,13 +267,13 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
     uint8_t buffer = 0;
     buffer = 0x80;
     MPU9250_CHECK(!_write(config->hw_info, MPU9250_PWR_MGMT_1, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
-    vTaskDelay(100/portTICK_PERIOD_MS);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
 
     /* Configure clock source and sleep mode */
     buffer = config->clksel & 0x07;
     buffer |= (config->sleep_mode << 6) & 0x40;
     MPU9250_CHECK(!_write(config->hw_info, MPU9250_PWR_MGMT_1, &buffer, 1, TIMEOUT_MS_DEFAULT), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
-    vTaskDelay(100/portTICK_PERIOD_MS);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
 
     /* Configure digital low pass filter */
     buffer = 0;
