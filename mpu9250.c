@@ -257,7 +257,7 @@ mpu9250_handle_t mpu9250_init(mpu9250_cfg_t *config)
     /* Init hardware */
     if (!config->hw_info.is_init) {
         init_func _init = _get_init_func(config->comm_mode);
-        MPU9250_CHECK(!_init(config->hw_info), MPU9250_INIT_ERR_STR, return NULL);
+        MPU9250_CHECK(!_init(config->hw_info), MPU9250_INIT_ERR_STR, {_mpu9250_cleanup(handle); return NULL;});
     }
 
     /* Get write function */
@@ -616,5 +616,5 @@ void mpu9250_auto_calib(mpu9250_handle_t handle)
 
 void mpu9250_destroy(mpu9250_handle_t handle)
 {
-    free(handle);
+    _mpu9250_cleanup(handle);
 }
